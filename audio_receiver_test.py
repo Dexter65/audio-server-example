@@ -49,7 +49,6 @@ class WebSocketClient:
             print("Disconnected, reconnecting...")
             self.connect_and_read()
 
-        self.num_trials += 1
         stream.write(message)
 
         # print(f"Text {message} and trial {self.num_trials}")

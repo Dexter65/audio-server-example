@@ -1,6 +1,7 @@
 import wave
 import pyaudio
 import tornado.websocket
+import tornado.ioloop
 
 CHUNK = 1024
 
@@ -12,57 +13,49 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
 
     def open(self):
         WebSocketServer.clients.add(self)
+        print('client connected')
+
+        # добавляем колбэк для отправки аудиопотока
+        # TODO: вероятно, нужно делать не на подключении пользователя
+        tornado.ioloop.IOLoop.current().spawn_callback(self.send_audio_stream)
 
     def on_close(self):
         WebSocketServer.clients.remove(self)
+        print('client disconnected')
 
-    @classmethod
-    def send_message(cls, message: str):
-        print(f"sending messge {message} to {len(cls.clients)}.")
-        for client in cls.clients:
-            client.write_message(message)
+    def on_message(self, message):
+        pass
 
-    @classmethod
-    def send_bytes(cls):
-        if cls.audio_stream is None:
+    async def send_audio_stream(self):
+        # открываем файл композиции, если он ещё не был открыт
+        if WebSocketServer.audio_stream is None:
             print("open audio")
-            cls.open_audio_stream("C:\\Users\\qw65r\\Music\\Sunny.wav")
+            WebSocketServer.open_audio_stream("C:\\Users\\qw65r\\Music\\Sunny.wav")
 
-        while len(data := cls.audio_file.readframes(CHUNK)):
-            print(cls.audio_file)
-            for client in cls.clients:
-                client.write_message(data, binary=True)
+        while True:
+            # читаем кадр с данными аудиопотока
+            data = WebSocketServer.audio_file.readframes(CHUNK)
 
-        print('ok')
-        # data = cls.audio_file.readframes(CHUNK)
-        # for client in cls.clients:
-        #     client.write_message(data, binary=True)
+            # перезапускаем проигрывание аудиофайла, если он закончился
+            if not data:
+                WebSocketServer.audio_file.rewind()
 
-        # cls.write_audio_to_stream()
-        print("send audio to receiver")
+            # отправляем всем клиентам аудиопоток
+            for client in WebSocketServer.clients:
+                try:
+                    # отправляем аудиопоток, если клиент подключен
+                    await client.write_message(data, binary=True)
+                except tornado.websocket.WebSocketClosedError:
+                    # клиент отключился, выкидываем его из списка
+                    WebSocketServer.clients.remove(client)
+                    print("Client disconnected, removed from set")
 
-    @classmethod
-    def write_audio_to_stream(cls):
-        for client in cls.clients:
-            client.write_message(cls.audio_stream)
-
-        while len(data := cls.audio_file.readframes(CHUNK)):
-            cls.audio_stream.write(data)
+            # возвращаем управление tornado event loop
+            await tornado.gen.sleep(0.01)
 
     @classmethod
     def open_audio_stream(cls, music_path):
         cls.audio_file = wave.open(music_path)
-
-
-        cls.audio_stream = cls.audio_ctrl.open(
-            format=cls.audio_ctrl.get_format_from_width(cls.audio_file.getsampwidth()),
-            channels=cls.audio_file.getnchannels(),
-            rate=cls.audio_file.getframerate(),
-            output=True
-        )
-
-        #     # Close stream (4)
-        #     stream.close()
 
 
 def main():
@@ -72,16 +65,8 @@ def main():
         websocket_ping_timeout=30,
     )
     app.listen(8888)
+    tornado.ioloop.IOLoop.current().start()
 
-    # создаем eventloop отправки аудио
-    io_loop = tornado.ioloop.IOLoop.current()
 
-    periodic_callback = tornado.ioloop.PeriodicCallback(
-        # lambda: WebSocketServer.send_message("BRUHH"), 100
-        lambda: WebSocketServer.send_bytes(), 100
-    )
-    periodic_callback.start()
-
-    io_loop.start()
-
-main()
+if __name__ == "__main__":
+    main()
