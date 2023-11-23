@@ -47,6 +47,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
     def open_audio_stream(cls, music_path):
         cls.audio_file = wave.open(music_path)
 
+
         cls.audio_stream = cls.audio_ctrl.open(
             format=cls.audio_ctrl.get_format_from_width(cls.audio_file.getsampwidth()),
             channels=cls.audio_file.getnchannels(),

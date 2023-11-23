@@ -1,6 +1,19 @@
 import tornado.ioloop
 import tornado.websocket
 
+import pyaudio
+
+p = pyaudio.PyAudio()
+CHUNK = 1024
+FORMAT = pyaudio.paInt8
+CHANNELS = 2
+RATE = 44100
+stream = p.open(format=FORMAT,
+                channels=CHANNELS,
+                rate=RATE,
+                output=True,
+                frames_per_buffer=CHUNK)
+
 
 class WebSocketClient:
     def __init__(self, io_loop):
@@ -38,7 +51,9 @@ class WebSocketClient:
             self.connect_and_read()
 
         self.num_trials += 1
-        print(f"Text {message} and trial {self.num_trials}")
+        stream.write(message)
+
+        # print(f"Text {message} and trial {self.num_trials}")
 
 
 def main():

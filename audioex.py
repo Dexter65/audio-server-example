@@ -15,6 +15,8 @@ with wave.open("C:\\Users\\qw65r\\Music\\Sunny.wav", 'rb') as wf:
                     channels=wf.getnchannels(),
                     rate=wf.getframerate(),
                     output=True)
+    # print(p.get_format_from_width(wf.getsampwidth()))
+    print(wf.getframerate())
 
     # Play samples from the wave file (3)
     while len(data := wf.readframes(CHUNK)):  # Requires Python 3.8+ for :=
