@@ -28,9 +28,15 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
             print("open audio")
             cls.open_audio_stream("C:\\Users\\qw65r\\Music\\Sunny.wav")
 
-        data = cls.audio_file.readframes(CHUNK)
-        for client in cls.clients:
-            client.write_message(data, binary=True)
+        while len(data := cls.audio_file.readframes(CHUNK)):
+            print(cls.audio_file)
+            for client in cls.clients:
+                client.write_message(data, binary=True)
+
+        print('ok')
+        # data = cls.audio_file.readframes(CHUNK)
+        # for client in cls.clients:
+        #     client.write_message(data, binary=True)
 
         # cls.write_audio_to_stream()
         print("send audio to receiver")

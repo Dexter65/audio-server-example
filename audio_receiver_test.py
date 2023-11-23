@@ -5,15 +5,14 @@ import pyaudio
 
 p = pyaudio.PyAudio()
 CHUNK = 1024
-FORMAT = pyaudio.paInt8
+FORMAT = 8
 CHANNELS = 2
 RATE = 44100
 stream = p.open(format=FORMAT,
                 channels=CHANNELS,
                 rate=RATE,
-                output=True,
-                frames_per_buffer=CHUNK)
-
+                output=True)
+# frames_per_buffer=CHUNK
 
 class WebSocketClient:
     def __init__(self, io_loop):
